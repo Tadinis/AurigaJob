@@ -1,75 +1,67 @@
 import socket
 import threading
-from utils import Config, Logger
 
+#Variables for holding information about connections
+connections = []
+total_connections = 0
 
-class ChatServer:
-    def __init__(self, ip: str, port: int):
-        self.clients = list()
-        self.ip = ip
-        self.port = port
-        self.ask_name = "name"
-        self.welcome_msg = "{} has joined the chat room!"
-        self.instruction = "To quit the chat room >> !quit"
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def _start_server(self):
-        self.sock.bind((self.ip, self.port))
-        self.sock.listen()
-
-    def broadcast_info(self, message: bytes):
-        for client, _ in self.clients:
-            client.send(message)
-
-    def remove_client(self, client):
-        for num, clients in enumerate(self.clients):
-            if client in clients:
-                self.clients.pop(num)
-                _, name = clients
-                msg = f"Client >> {name.decode('utf-8')} has lef the chat room..."
-                Logger.info(msg)
-                self.broadcast_info(msg.encode("utf-8"))
-                client.close()
-
-    def handle_client(self, client):
-        while True:
+#Client class, new instance created for each connected client
+#Each instance has the socket and address that is associated with items
+#Along with an assigned ID and a name chosen by the client
+class Client(threading.Thread):
+    def __init__(self, socket, address, id, name, signal):
+        threading.Thread.__init__(self)
+        self.socket = socket
+        self.address = address
+        self.id = id
+        self.name = name
+        self.signal = signal
+    
+    def __str__(self):
+        return str(self.id) + " " + str(self.address)
+    
+    #Attempt to get data from client
+    #If unable to, assume client has disconnected and remove him from server data
+    #If able to and we get data back, print it in the server and send it back to every
+    #client aside from the client that has sent it
+    #.decode is used to convert the byte data into a printable string
+    def run(self):
+        while self.signal:
             try:
-                message = client.recv(Config.BUFFER_SIZE)
-                if message:
-                    Logger.info(message.decode("utf-8"))
-                elif message and message.decode("utf-8").split(":")[-1].strip() == "!quit":
-                    print(message)
-                    print(message.decode("utf-8").split(":")[-1].strip())
-                    self.remove_client(client)
+                data = self.socket.recv(32)
+            except:
+                print("Client " + str(self.address) + " has disconnected")
+                self.signal = False
+                connections.remove(self)
+                break
+            if data != "":
+                print("ID " + str(self.id) + ": " + str(data.decode("utf-8")))
+                for client in connections:
+                    if client.id != self.id:
+                        client.socket.sendall(data)
 
-                self.broadcast_info(message)
-            except Exception as er:
-                Logger.error(er.args[0])
-                self.remove_client(client)
-                return
+#Wait for new connections
+def newConnections(socket):
+    while True:
+        sock, address = socket.accept()
+        global total_connections
+        connections.append(Client(sock, address, total_connections, "Name", True))
+        connections[len(connections) - 1].start()
+        print("New connection at ID " + str(connections[len(connections) - 1]))
+        total_connections += 1
 
-    def main_loop(self):
-        self._start_server()
+def main():
+    #Get host and port
+    host = "127.0.0.1"
+    port = 55555
 
-        while True:
-            print(f"Starting server and listening to {self.ip}:{self.port}")
-            client, address = self.sock.accept()
-            Logger.info(f"Connection established with {str(address)}")
-            print(f"Connection established with {str(address)}")
-            client.send(self.ask_name.encode("utf-8"))
-            client_name = client.recv(Config.BUFFER_SIZE)
+    #Create new server socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((host, port))
+    sock.listen(5)
 
-            Logger.info(f"New user: {address}, nickname: {client_name}")
-            self.clients.append((client, client_name))
-            msg = self.welcome_msg.format(client_name).encode("utf-8")
-            self.broadcast_info(message=msg)
-            client.send(f"\nYou connected to the chat room! {self.instruction}".encode("utf-8"))
-            # start threads here
-            thread = threading.Thread(target=self.handle_client, args=(client,))
-            thread.start()
-
-
-if __name__ == "__main__":
-    Logger(filename="server_logger")
-    server = ChatServer(Config.HOST, Config.PORT)
-    server.main_loop()
+    #Create new thread to wait for connections
+    newConnectionsThread = threading.Thread(target = newConnections, args = (sock,))
+    newConnectionsThread.start()
+    
+main()
