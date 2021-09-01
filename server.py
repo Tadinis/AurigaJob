@@ -2,17 +2,26 @@ import socket
 import threading
 from utils import Config, Logger
 
+stop_server_thread = False
+logger = None
 
 class ChatServer:
-    def __init__(self, ip: str, port: int):
+    def __init__(self, ip: str, port: int, logger: logger):
         self.clients = list()
         self.ip = ip
         self.port = port
+        self.logger = logger
         self.ask_name = "name"
         self.welcome_msg = "{} has joined the chat room!"
         self.instruction = "To quit the chat room >> !quit"
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+
+    def _stop_server(self):
+        '''Stopping server thread loop'''
+        stop_server_thread = True
+        self.server_thread.join()
+    
     def _start_server(self):
         self.sock.bind((self.ip, self.port))
         self.sock.listen()
@@ -49,17 +58,14 @@ class ChatServer:
                 return
 
     def main_loop(self):
-        self._start_server()
+        server_thread = threading.Thread(target=self._start_server())
+        server_thread.start()
 
-        while True:
+        while not stop_server_thread:
             print(f"Starting server and listening to {self.ip}:{self.port}")
             client, address = self.sock.accept()
             Logger.info(f"Connection established with {str(address)}")
             print(f"Connection established with {str(address)}")
-            
-            msg_connected = 'Connection established.'
-            client.send(msg_connected.encode("utf-8"))
-
             client.send(self.ask_name.encode("utf-8"))
             client_name = client.recv(Config.BUFFER_SIZE)
 
@@ -75,5 +81,11 @@ class ChatServer:
 
 if __name__ == "__main__":
     Logger(filename="server_logger")
-    server = ChatServer(Config.HOST, Config.PORT)
+    server = ChatServer(Config.HOST, Config.PORT, logger = logger)
     server.main_loop()
+
+def Test1():
+    pass
+
+def Test2():
+    pass

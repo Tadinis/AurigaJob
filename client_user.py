@@ -2,8 +2,6 @@ import socket
 import threading
 from utils import Config
 
-import sys
-
 
 class ClientUser:
     def __init__(self, ip: str, port: int, name: str):
@@ -52,39 +50,8 @@ class ClientUser:
         send_side.start()
         self.receive_data()
 
-###
-def Test_msg():
-    host = 'localhost'
-    port = 55555
-    addr = (host, port)
-    message = "Hello world!"
-    test_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    test_client.connect(addr)
-    test_client.send(message.encode("utf-8"))
-    x = test_client.recv(64).decode("utf-8")
-    if x == 'Connection established.':
-        print("Connected")
-    test_client.shutdown(socket.SHUT_RDWR)
-
-def Test_2mb_msg():
-    #Sending 2mb message
-    host = 'localhost'
-    port = 55555
-    addr = (host, port)
-    large_msg = "Auriga"
-    while sys.getsizeof(large_msg)<2000000:
-        large_msg = large_msg + "Job"
-    test_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    test_client.connect(addr)
-    test_client.send(large_msg.encode("utf-8"))
-    x = test_client.recv(64).decode("utf-8")
-    if x == 'Connection established.':
-        print("Connected")
-    test_client.shutdown(socket.SHUT_RDWR)
-###
 
 if __name__ == "__main__":
-    Test_msg()
     user_name = ClientUser.get_name()
     user = ClientUser(ip=Config.HOST, port=Config.PORT, name=user_name)
     user.connect()
