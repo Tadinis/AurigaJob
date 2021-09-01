@@ -1,6 +1,8 @@
 import socket
 import threading
 from utils import Config, Logger
+import time
+import sys
 
 stop_server_thread = False
 logger = None
@@ -58,9 +60,7 @@ class ChatServer:
                 return
 
     def main_loop(self):
-        server_thread = threading.Thread(target=self._start_server())
-        server_thread.start()
-
+        self._start_server()
         while not stop_server_thread:
             print(f"Starting server and listening to {self.ip}:{self.port}")
             client, address = self.sock.accept()
@@ -77,15 +77,36 @@ class ChatServer:
             # start threads here
             thread = threading.Thread(target=self.handle_client, args=(client,))
             thread.start()
+            
+def Test():
+    msg_hello = "Tadas"
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((Config.HOST, Config.PORT))
+    client.send(msg_hello.encode("utf-8"))
+    time.sleep(1)
+    client.send("Test successful".encode("utf-8"))
+    client.close()
+    
+    
+def Test2():
+    #Generate big message
+    msg = "Auriga"
+    while sys.getsizeof(msg) < 2000000:
+        msg = msg + "job"
+    msg = msg + "FULL MESSAGE"   
+    client_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_2.connect((Config.HOST, Config.PORT))
+    client_2.send(msg.encode("utf-8"))
+    time.sleep(2)
 
+    client_2.close()
+
+    
 
 if __name__ == "__main__":
     Logger(filename="server_logger")
     server = ChatServer(Config.HOST, Config.PORT, logger = logger)
-    server.main_loop()
-
-def Test1():
-    pass
-
-def Test2():
-    pass
+    server_thread = threading.Thread(target=server.main_loop)
+    server_thread.start()
+    Test()
+    Test2()
