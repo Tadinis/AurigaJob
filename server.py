@@ -90,7 +90,7 @@ class ChatServer:
     def _stop_server(self):
         '''Stopping server thread loop'''
         self.stop_server_thread = True
-        thread_server.join()
+        thread_server.join(1)
 
     #def start_server_thread(self):
         #thread_server = threading.Thread(target=server.main_loop)
