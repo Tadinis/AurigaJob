@@ -8,14 +8,14 @@ import time
 import sys
 import logging
 
-
 '''UTILS'''
 logger = None
+
 
 @dataclass(init=False)
 class Config:
     HOST: str = "localhost"
-    PORT: int = 55555
+    PORT: int = 5551
     BUFFER_SIZE: int = 1024
 
 
@@ -71,8 +71,8 @@ class Logger:
     def debug(msg):
         Logger._logger.debug(msg)
 
-'''UTILS'''
 
+'''UTILS'''
 
 
 class ChatServer:
@@ -90,11 +90,6 @@ class ChatServer:
     def _stop_server(self):
         '''Stopping server thread loop'''
         self.stop_server_thread = True
-        thread_server.join(1)
-
-    #def start_server_thread(self):
-        #thread_server = threading.Thread(target=server.main_loop)
-        #thread_server.start()
 
     def _start_server(self):
         self.sock.bind((self.ip, self.port))
@@ -132,7 +127,7 @@ class ChatServer:
                 return
 
     def main_loop(self):
-
+        self._start_server()
         while not self.stop_server_thread:
             print(f"Starting server and listening to {self.ip}:{self.port}")
             client, address = self.sock.accept()
@@ -143,42 +138,61 @@ class ChatServer:
 
             Logger.info(f"New user: {address}, nickname: {client_name}")
             self.clients.append((client, client_name))
-            msg = self.welcome_msg.format(client_name).encode("utf-8")
-            self.broadcast_info(message=msg)
-            client.send(f"\nYou connected to the chat room! {self.instruction}".encode("utf-8"))
+            message_sent(msg) """čia reikia dar pridėti būda priimti klijento žinutę ir ją nusiųsti"""
+            
+
+            # msg = self.welcome_msg.format(client_name).encode("utf-8")
+            # self.broadcast_info(message=msg)
+            # client.send(f"\nYou connected to the chat room! {self.instruction}".encode("utf-8"))
+            #
             # start threads here
             thread = threading.Thread(target=self.handle_client, args=(client,))
             thread.start()
+        def message_sent(msg):
+            for client in self.clients:
+                try:
+                    self.broadcast_info(msg)
+                except Exception as error:
+                    Logger.error(error.args[0])
+                    self.remove_client(client)
+                    return
+
+def mysend(socket, msg):
+    totalsent = 0
+    while totalsent < len(msg):
+        sent = socket.send(msg[totalsent:])
+        if sent == 0:
+            raise RuntimeError("socket connection broken")
+        totalsent = totalsent + sent
 
 
 def Test():
-    msg_hello = "Tadas"
+    msg_hello = "Test"
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((Config.HOST, Config.PORT))
-    client.send(msg_hello.encode("utf-8"))
-    time.sleep(1)
+    mysend(client, msg_hello.encode("utf-8"))
     client.close()
-    #server._stop_server()
+
 
 def Test2():
     # Generate big message
     msg = "Auriga"
-    while sys.getsizeof(msg) < 1024:
+    while sys.getsizeof(msg) < 200:
         msg = msg + "job"
     msg = msg + "FULL MESSAGE"
     client_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_2.connect((Config.HOST, Config.PORT))
-    client_2.send(msg.encode("utf-8"))
+    client_2.sendall(msg.encode("utf-8"))
     time.sleep(1)
     client_2.close()
+
 
 if __name__ == "__main__":
     Logger(filename="server_logger")
     server = ChatServer(Config.HOST, Config.PORT, logger=logger)
-    server._start_server()
-    #server.start_server_thread()
     thread_server = threading.Thread(target=server.main_loop)
     thread_server.start()
     Test()
-    Test2()
     server._stop_server()
+    thread_server.join()
+    # Test2()
