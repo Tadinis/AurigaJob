@@ -104,7 +104,7 @@ class ChatServer:
             if client in clients:
                 self.clients.pop(num)
                 _, name = clients
-                msg = f"Client >> {name.decode('utf-8')} has lef the chat room..."
+                msg = f"Client >> {name.decode('utf-8')} has left the chat room..."
                 Logger.info(msg)
                 self.broadcast_info(msg.encode("utf-8"))
                 client.close()
@@ -128,34 +128,42 @@ class ChatServer:
 
     def main_loop(self):
         self._start_server()
-        while not self.stop_server_thread:
-            print(f"Starting server and listening to {self.ip}:{self.port}")
-            client, address = self.sock.accept()
-            Logger.info(f"Connection established with {str(address)}")
-            print(f"Connection established with {str(address)}")
-            client.send(self.ask_name.encode("utf-8"))
-            client_name = client.recv(Config.BUFFER_SIZE)
 
-            Logger.info(f"New user: {address}, nickname: {client_name}")
-            self.clients.append((client, client_name))
-            message_sent(msg) """čia reikia dar pridėti būda priimti klijento žinutę ir ją nusiųsti"""
-            
-
-            # msg = self.welcome_msg.format(client_name).encode("utf-8")
-            # self.broadcast_info(message=msg)
-            # client.send(f"\nYou connected to the chat room! {self.instruction}".encode("utf-8"))
-            #
-            # start threads here
-            thread = threading.Thread(target=self.handle_client, args=(client,))
-            thread.start()
-        def message_sent(msg):
+        def message_sent(mssg):
             for client in self.clients:
                 try:
-                    self.broadcast_info(msg)
+                    client.send(mssg.encode("utf-8"))
                 except Exception as error:
-                    Logger.error(error.args[0])
+                    Logger.error(error)
                     self.remove_client(client)
                     return
+
+        while not self.stop_server_thread:
+            try:
+                print(f"Starting server and listening to {self.ip}:{self.port}")
+                client, address = self.sock.accept()
+                Logger.info(f"Connection established with {str(address)}")
+                print(f"Connection established with {str(address)}")
+                client.send(self.ask_name.encode("utf-8"))
+                client_name = client.recv(Config.BUFFER_SIZE)
+
+                Logger.info(f"New user: {address}, nickname: {client_name}")
+                self.clients.append((client, client_name))
+                message_sent(f"{client_name} has connected")
+                """čia reikia dar pridėti būda priimti klijento žinutę ir ją nusiųsti"""
+
+
+                # msg = self.welcome_msg.format(client_name).encode("utf-8")
+                # self.broadcast_info(message=msg)
+                # client.send(f"\nYou connected to the chat room! {self.instruction}".encode("utf-8"))
+                #
+                # start threads here
+                thread = threading.Thread(target=self.handle_client, args=(client,))
+                thread.start()
+            except Exception as er:
+                Logger.error(er)
+
+
 
 def mysend(socket, msg):
     totalsent = 0
@@ -171,6 +179,7 @@ def Test():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((Config.HOST, Config.PORT))
     mysend(client, msg_hello.encode("utf-8"))
+    time.sleep(1)
     client.close()
 
 
