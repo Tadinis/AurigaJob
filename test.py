@@ -5,8 +5,7 @@ import datetime
 import sys
 from utils import Config
 from logger import Logger
-from unittest import mock
-import socket
+
 
 class TestStringMethods(unittest.TestCase):
     
@@ -87,6 +86,7 @@ if __name__ == '__main__':
     
     Logger(filename="test_logger")
     unittest.main()
+
 
 
 
