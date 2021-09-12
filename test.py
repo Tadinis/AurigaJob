@@ -8,7 +8,7 @@ from logger import Logger
 
 
 class TestStringMethods(unittest.TestCase):
-    
+    """Defining function to look through a file"""
     def file_check(self, word, test_numb):
         f = open(f"{datetime.date.today()}_server_logger.txt", "r")
         check = False
@@ -42,7 +42,7 @@ class TestStringMethods(unittest.TestCase):
             universal_newlines=True
         )
         sleep(1)
-        
+
     def tearDown(self):
         try:
             client.terminate()
@@ -53,7 +53,7 @@ class TestStringMethods(unittest.TestCase):
             Logger.error(str(er))
             print(f"Close failed: {str(er)}")
 
-
+    """Test to send a simple message to the server"""
     def test1(self):
         try:
             client.stdin.write("test\n")
@@ -64,7 +64,7 @@ class TestStringMethods(unittest.TestCase):
                          
         TestStringMethods.file_check(self, "test", 1)
 
-
+    """Test2 sends a larger message, which exceeds sock.recv() provided BUFFER_SIZE"""
     def test2(self):
         #generate message
         msg = ""
@@ -72,7 +72,7 @@ class TestStringMethods(unittest.TestCase):
             msg = msg + "a"
         msg = msg + "OVERFLOW"
         try:
-            #Sending message over the buffer size
+            #Sending message greater than the buffer size
             client.stdin.write(msg)
             sleep(1)
             client.stdin.write("!quit\n")
