@@ -64,7 +64,7 @@ class TestStringMethods(unittest.TestCase):
                          
         TestStringMethods.file_check(self, "test", 1)
 
-    """Test2 sends a larger message, which exceeds sock.recv() provided BUFFER_SIZE"""
+    """Test2 sends a larger message, which exceeds sock.recv(BUFFER_SIZE) on the server"""
     def test2(self):
         #generate message
         msg = ""
